@@ -2,21 +2,25 @@ research_profile:
   language: en
   goal: >
     Find general AI method papers that may inspire machine learning research,
-    time-series modeling, sequence modeling, multimodal learning, adaptation,
-    calibration, uncertainty modeling, and robust deployment.
+    multimodal learning, continual learning, compositionality, sparse representation, 
+    adaptation, multi-objective optimization, multi-objective alignment.
   background_topics:
     - machine learning
     - representation learning
-    - sequence modeling
-    - time-series modeling
+    - sparse representation learning
     - multimodal learning
     - uncertainty modeling
-    - calibration
     - test-time adaptation
     - continual learning
-    - domain adaptation
-    - distribution shift
+    - compositionality
+    - multi-objective optimization
+    - multi-objective alignment
   positive_keywords:
+    - sparse autoencoder
+    - concept representation
+    - compositional representation
+    - concept-enhanced training
+    - compositional generalization
     - representation learning
     - disentangled representation
     - invariant representation
@@ -31,22 +35,9 @@ research_profile:
     - sequence modeling
     - temporal modeling
     - long-context modeling
-    - state space model
-    - recurrent model
-    - temporal attention
     - alignment modeling
-    - CTC
-    - transducer
-    - sequence-to-sequence
-    - uncertainty estimation
-    - aleatoric uncertainty
-    - epistemic uncertainty
-    - calibration
-    - conformal prediction
     - robust learning
     - out-of-distribution
-    - noisy label learning
-    - confidence estimation
     - online adaptation
     - test-time adaptation
     - continual learning
@@ -70,9 +61,6 @@ research_profile:
     - cross-modal representation learning
     - attention mechanism
     - tokenization
-    - spatiotemporal modeling
-    - time series
-    - irregular time series
     - foundation model
     - scientific machine learning
     - language model

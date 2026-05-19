@@ -11,7 +11,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
 from fetch_arxiv import fetch_arxiv_html_recent
 from daily_papers import compare_with_previous_candidates, run_pipeline
-from utils import NetworkPreflightError, network_preflight_urls, write_json_atomic
+from utils import NetworkPreflightError, network_preflight_urls, parse_target_date, write_json_atomic
 
 
 def test_fetch_stage_generates_candidates_not_report(tmp_path):
@@ -61,6 +61,17 @@ retrieval:
     assert (tmp_path / "data" / "raw" / "2026-05-14.json").exists()
     assert not (tmp_path / "reports" / "2026-05-14.md").exists()
     assert not (tmp_path / "data" / "processed" / "2026-05-14_top10.json").exists()
+
+
+def test_parse_target_date_supports_yesterday(monkeypatch):
+    class FixedDate(date):
+        @classmethod
+        def today(cls):
+            return cls(2026, 5, 19)
+
+    monkeypatch.setattr("utils.date", FixedDate)
+
+    assert parse_target_date("yesterday") == date(2026, 5, 18)
 
 
 def test_write_json_atomic_falls_back_when_replace_is_blocked(tmp_path, monkeypatch):
