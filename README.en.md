@@ -97,7 +97,7 @@ python -m venv .venv-win
 ### 🔎 3. Fetch candidate papers
 
 ```bash
-python scripts/daily_papers.py --config config.yaml --date today --stage fetch --force
+python scripts/daily_papers.py --config config.yaml --date yesterday --stage fetch --force
 ```
 
 Outputs:
@@ -109,13 +109,18 @@ logs/YYYY-MM-DD.log
 ```
 
 This command only creates the candidate pool. It does not write the final daily report.
+`--date` accepts `today`, `yesterday`, or `YYYY-MM-DD`, and defaults to
+`yesterday`; daily automations should usually fetch `yesterday` so source batches
+have time to settle.
 `data/raw/YYYY-MM-DD.json` includes `duplicate_check`. If its status is
-`duplicate_of_previous`, today's candidate pool is identical to the most recent
-previous pool and `recommended_action` is `write_no_new_batch_note`, so Codex
-should write a short "no new candidate batch today" note instead of repeating
-the Top 10 report.
+`duplicate_of_previous`, or the top-level / `duplicate_check`
+`recommended_action` is `write_no_new_batch_note`, the target-date candidate
+pool is empty or identical to the most recent previous pool, so Codex should
+write a short "no new candidate batch" note instead of repeating the Top 10
+report.
 For arXiv, CAPR prefers the HTML recent-list announcement date. If the target
-date has no new announcement batch, the workflow does not reuse an older batch.
+date has no new announcement batch, the workflow does not reuse an older batch
+or treat old candidates as the target-date result.
 
 ## 🤖 Codex Automation
 

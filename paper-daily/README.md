@@ -22,17 +22,21 @@ python -m venv .venv-win
 ## Fetch Candidates
 
 ```bash
-python scripts/daily_papers.py --config config.yaml --date today --stage fetch --force
+python scripts/daily_papers.py --config config.yaml --date yesterday --stage fetch --force
 ```
 
 Common options:
 
 ```bash
 python scripts/daily_papers.py --config config.yaml --date 2026-05-15 --stage fetch --force
-python scripts/daily_papers.py --config config.yaml --date today --stage fetch --lookback-days 3
-python scripts/daily_papers.py --config config.yaml --date today --stage fetch --sources arxiv,openreview
-python scripts/daily_papers.py --config config.yaml --date today --stage fetch --sources openalex
+python scripts/daily_papers.py --config config.yaml --date yesterday --stage fetch --lookback-days 3
+python scripts/daily_papers.py --config config.yaml --date yesterday --stage fetch --sources arxiv,openreview
+python scripts/daily_papers.py --config config.yaml --date yesterday --stage fetch --sources openalex
 ```
+
+`--date` accepts `today`, `yesterday`, or `YYYY-MM-DD`, and defaults to
+`yesterday`. Daily automations should usually fetch `yesterday` so paper-source
+batches have time to settle before Codex reads them.
 
 OpenAlex is implemented as a first-class fetch source alongside arXiv and
 OpenReview, but it is disabled by default in `config.yaml`. Enable it only when
@@ -52,10 +56,11 @@ logs/YYYY-MM-DD.log
 Runtime outputs are ignored by Git.
 
 The raw JSON includes a `duplicate_check` block. If `status` is
-`duplicate_of_previous`, today's final candidate pool has the same paper IDs as
-the most recent previous candidate file. In that case, `recommended_action` is
-`write_no_new_batch_note`, and Codex should write a short "no new candidate
-batch today" note instead of repeating the prior Top 10.
+`duplicate_of_previous`, or either the top-level or `duplicate_check`
+`recommended_action` is `write_no_new_batch_note`, the target-date final
+candidate pool is empty or has the same paper IDs as the most recent previous
+candidate file. Codex should write a short "no new candidate batch" note instead
+of repeating the prior Top 10.
 
 For arXiv, CAPR treats the HTML recent-list heading date as the authoritative
 daily announcement date. If no papers are listed for the target date, it does

@@ -97,7 +97,7 @@ python -m venv .venv-win
 ### 🔎 3. 抓取候选论文
 
 ```bash
-python scripts/daily_papers.py --config config.yaml --date today --stage fetch --force
+python scripts/daily_papers.py --config config.yaml --date yesterday --stage fetch --force
 ```
 
 输出文件：
@@ -109,11 +109,12 @@ logs/YYYY-MM-DD.log
 ```
 
 注意：这一步只生成候选池，不生成最终日报。
+`--date` 支持 `today`、`yesterday` 或 `YYYY-MM-DD`，默认值是 `yesterday`；日常自动化建议抓取 `yesterday`，避免论文源当天批次尚未完全更新。
 `data/raw/YYYY-MM-DD.json` 会包含 `duplicate_check`。如果状态是
-`duplicate_of_previous`，对应的 `recommended_action` 会是
-`write_no_new_batch_note`，说明当天候选池与最近一次候选池完全相同；Codex 应写一段
-“今日无新候选批次”说明，而不是重复生成 Top 10 日报。
-arXiv 日报优先使用 HTML recent-list 的公告日期；如果目标日期没有新公告批次，流程不会复用旧批次。
+`duplicate_of_previous`，或顶层 / `duplicate_check` 的 `recommended_action` 是
+`write_no_new_batch_note`，说明目标日期候选池为空或与最近一次候选池完全相同；Codex 应写一段
+“无新候选批次”说明，而不是重复生成 Top 10 日报。
+arXiv 日报优先使用 HTML recent-list 的公告日期；如果目标日期没有新公告批次，流程不会复用旧批次，也不会把旧候选池当作目标日期结果。
 
 ## 🤖 Codex 自动化用法
 
