@@ -6,25 +6,22 @@ research_profile:
     adaptation, multi-objective optimization, multi-objective alignment.
   background_topics:
     - machine learning
-    - representation learning
     - sparse representation learning
     - multimodal learning
-    - uncertainty modeling
     - test-time adaptation
     - continual learning
     - compositionality
     - multi-objective optimization
     - multi-objective alignment
+    - vision-language model
   positive_keywords:
     - sparse autoencoder
     - concept representation
     - compositional representation
     - concept-enhanced training
     - compositional generalization
-    - representation learning
     - disentangled representation
     - invariant representation
-    - equivariant representation
     - contrastive learning
     - self-supervised learning
     - masked modeling
@@ -32,11 +29,6 @@ research_profile:
     - latent variable model
     - prototype learning
     - metric learning
-    - sequence modeling
-    - temporal modeling
-    - long-context modeling
-    - alignment modeling
-    - robust learning
     - out-of-distribution
     - online adaptation
     - test-time adaptation
@@ -45,25 +37,16 @@ research_profile:
     - domain generalization
     - distribution shift
     - representation drift
-    - non-stationary learning
     - language model integration
     - retrieval-augmented generation
-    - reranking
-    - sequence scoring
-    - decoding strategy
-    - preference optimization
-    - weak supervision
-    - posterior inference
-    - self-training
-    - pseudo-labeling
     - diffusion model
     - multimodal alignment
     - cross-modal representation learning
     - attention mechanism
-    - tokenization
     - foundation model
     - scientific machine learning
-    - language model
+    - vision-language model
+    - world model
   negative_keywords:
     - protein folding
     - recommender system

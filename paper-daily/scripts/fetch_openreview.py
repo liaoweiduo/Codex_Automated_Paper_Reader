@@ -7,6 +7,8 @@ from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request
 
+from openreview_auth import openreview_access_token
+
 from utils import http_open, isoformat_or_empty, normalize_whitespace, parse_datetime, validate_paper_schema
 
 
@@ -87,14 +89,87 @@ def fetch_openreview(
     return all_papers, warnings
 
 
+def fetch_openreview_venue(
+    source_config: dict[str, Any],
+    venue_name: str,
+    year: int,
+    explicit_invitation: str | None = None,
+    max_results: int = 50000,
+    logger=None,
+) -> tuple[list[dict[str, Any]], list[str], str]:
+    """Fetch a released venue collection without applying a daily date window."""
+
+    warnings: list[str] = []
+    client = None
+    try:
+        import openreview
+
+        client = _make_client(openreview, warnings)
+    except ImportError:
+        client = None
+    invitations = []
+    if explicit_invitation:
+        invitations.append(explicit_invitation)
+    invitations.extend(candidate_venue_ids(venue_name, year))
+    invitations = list(dict.fromkeys(invitations))
+    page_size = min(1000, max(1, max_results))
+
+    for invitation in invitations:
+        try:
+            notes: list[Any] = []
+            seen_ids: set[str] = set()
+            offset = 0
+            while len(notes) < max_results:
+                if client is not None:
+                    page = _get_notes_client_page(client, invitation, page_size, offset)
+                else:
+                    page = _get_notes_http_page(invitation, page_size, offset)
+                if not page:
+                    break
+                page_ids = [str(_note_field(note, "id", "")) for note in page]
+                if not any(note_id and note_id not in seen_ids for note_id in page_ids):
+                    break
+                notes.extend(note for note, note_id in zip(page, page_ids) if note_id not in seen_ids)
+                seen_ids.update(note_id for note_id in page_ids if note_id)
+                offset += len(page)
+            papers = [normalize_openreview_note(note, venue_name) for note in notes[:max_results]]
+            if papers:
+                if len(notes) >= max_results:
+                    warnings.append(
+                        f"OpenReview collection reached max_results={max_results}; rerun with a larger limit if needed"
+                    )
+                if logger:
+                    logger.info("Fetched %s OpenReview papers for conference invitation %s", len(papers), invitation)
+                return papers, warnings, invitation
+        except Exception as exc:
+            warnings.append(f"OpenReview invitation {invitation} failed: {exc}")
+            if logger:
+                logger.warning(warnings[-1])
+    return [], warnings or [f"No papers returned for OpenReview venue {venue_name} {year}"], invitations[0] if invitations else ""
+
+
+def _get_notes_client_page(client: Any, invitation: str, limit: int, offset: int) -> list[Any]:
+    """Call openreview-py across client versions with bounded pagination."""
+
+    try:
+        return list(client.get_notes(invitation=invitation, limit=limit, offset=offset))
+    except TypeError:
+        if offset:
+            all_notes = list(client.get_notes(invitation=invitation))
+            return all_notes[offset : offset + limit]
+        return list(client.get_notes(invitation=invitation, limit=limit))
+
+
 def _make_client(openreview_module: Any, warnings: list[str]) -> Any | None:
     """Create an OpenReview client compatible with old and new API packages."""
 
+    token = openreview_access_token()
+    auth = {"token": token} if token else {}
     try:
-        return openreview_module.api.OpenReviewClient(baseurl="https://api2.openreview.net")
+        return openreview_module.api.OpenReviewClient(baseurl="https://api2.openreview.net", **auth)
     except Exception as exc_api2:
         try:
-            return openreview_module.Client(baseurl="https://api.openreview.net")
+            return openreview_module.Client(baseurl="https://api.openreview.net", **auth)
         except Exception as exc_api1:
             warnings.append(f"OpenReview client initialization failed: api2={exc_api2}; api1={exc_api1}")
             return None
@@ -117,13 +192,40 @@ def _get_notes_http(invitation: str, limit: int) -> list[dict[str, Any]]:
         params = urlencode({"invitation": invitation, "limit": limit})
         url = f"{base_url}?{params}"
         try:
-            request = Request(url, headers={"User-Agent": "paper-daily-mvp/0.1"})
+            headers = {"User-Agent": "paper-daily-mvp/0.1"}
+            token = openreview_access_token()
+            if token:
+                headers["Authorization"] = "Bearer " + token
+            request = Request(url, headers=headers)
             with http_open(request, timeout=30) as response:
                 payload = response.read().decode("utf-8", errors="replace")
             import json
 
             data = json.loads(payload)
             return list(data.get("notes", []))
+        except Exception as exc:
+            errors.append(f"{base_url}: {exc}")
+    raise RuntimeError("; ".join(errors))
+
+
+def _get_notes_http_page(invitation: str, limit: int, offset: int = 0) -> list[dict[str, Any]]:
+    """Query one bounded page of OpenReview notes."""
+
+    errors = []
+    for base_url in ("https://api2.openreview.net/notes", "https://api.openreview.net/notes"):
+        params = urlencode({"invitation": invitation, "limit": limit, "offset": offset})
+        url = f"{base_url}?{params}"
+        try:
+            headers = {"User-Agent": "paper-daily-mvp/0.1"}
+            token = openreview_access_token()
+            if token:
+                headers["Authorization"] = "Bearer " + token
+            request = Request(url, headers=headers)
+            with http_open(request, timeout=30) as response:
+                payload = response.read().decode("utf-8", errors="replace")
+            import json
+
+            return list(json.loads(payload).get("notes", []))
         except Exception as exc:
             errors.append(f"{base_url}: {exc}")
     raise RuntimeError("; ".join(errors))

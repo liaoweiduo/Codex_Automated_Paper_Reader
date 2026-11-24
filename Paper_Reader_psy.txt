@@ -1,0 +1,363 @@
+# Behavioral Paper Reader 自动化 Prompt（可直接复制到 Codex Automations）
+
+项目定位：
+- `paper-daily` 是确定性的论文候选检索工具，不是日报生成器。
+- Python 脚本负责搜索、API 拉取、订阅源抓取、metadata 归一化、去重、粗排和候选 JSON 写入。
+- Codex/LLM 只负责读取候选 JSON、理解 abstract / paper page / PDF、语义评分、排序、写日报和维护 Obsidian。
+- 禁止让 Codex/LLM 自己上网搜索论文来替代 daily pipeline。
+
+运行方式：
+- 使用 Codex standalone automation。
+- 如果 automation 可以设置 `cwd`，请设置为：
+  /Users/liaoweiduo/Documents/Github/Codex_Automated_Paper_Reader/paper-daily
+- 如果不能设置 `cwd`，第一步必须切换到该目录。
+- 不要切换到其他同名或旧路径项目。
+
+本地路径：
+/Users/liaoweiduo/Documents/Github/Codex_Automated_Paper_Reader/paper-daily
+
+路径要求：
+- 所有相对路径都必须以 `paper-daily` 目录为基准。
+- 使用你的 Python 可执行文件，例如：.venv/bin/python
+- 本 automation 的命名空间固定为：`psy`
+- 本 automation 的所有输出都必须写入 `psy` 专用路径，禁止写入无命名空间的默认路径。
+
+输出隔离规则：
+- 候选与 raw JSON 目录：`data/psy/`
+- 日志目录：`logs/psy/`
+- 日报目录：`reports/psy/`
+- 评分文件：`data/psy/processed/YYYY-MM-DD_scored.json`
+- 日报文件：`reports/psy/YYYY-MM-DD-psy.md`
+- 深读临时文件：`tmp/deep_read_psy_YYYY-MM-DD/`
+- 如果同一天另一个 automation 也在运行，不要读取或写入 `data/cs/`、`logs/cs/`、`reports/cs/`。
+
+环境变量加载：
+- 自动化运行时不要假设会读取你的交互式 shell 配置（例如 `.zshrc`）。
+- 如果存在本地文件 `.env.automation`，必须先加载它，再运行抓取命令。
+- `.env.automation` 只放在本地，不要提交到 Git。
+- 不要在最终回复、日志摘要或日报里打印任何 API key。
+
+推荐的 `.env.automation` 文件内容示例：
+
+```bash
+NCBI_EMAIL=you@example.com
+NCBI_API_KEY=
+OPENALEX_API_KEY=
+SEMANTIC_SCHOLAR_API_KEY=
+```
+
+运行前环境变量检查：
+- 如果 `.env.automation` 不存在，继续运行，但在最终回复中提醒用户可以创建它。
+- 如果 `NCBI_EMAIL` 为空，继续运行 PubMed，但在最终回复中提醒用户设置 `NCBI_EMAIL`。
+- `NCBI_API_KEY`、`OPENALEX_API_KEY`、`SEMANTIC_SCHOLAR_API_KEY` 都是可选项；缺失时不要中断，除非对应源返回明确的 rate-limit / quota 错误。
+
+第一步：创建或更新本 automation 专用 config。
+必须先在 `paper-daily` 目录执行下面命令，生成 `.automation/config.psy.yaml`，再运行候选检索。这个 config 只改输出目录，不改研究主题和抓取源。
+
+```bash
+mkdir -p .automation
+python - <<'PY'
+from pathlib import Path
+import yaml
+
+src = Path("config.behavior.yaml")
+dst = Path(".automation/config.psy.yaml")
+config = yaml.safe_load(src.read_text())
+config.setdefault("output", {})
+config["output"]["data_dir"] = "data/psy"
+config["output"]["report_dir"] = "reports/psy"
+config["output"]["log_dir"] = "logs/psy"
+dst.write_text(yaml.safe_dump(config, sort_keys=False, allow_unicode=True))
+PY
+```
+
+第二步：只运行候选检索，不要让脚本生成日报。
+
+使用下面这个命令。注意必须在同一个 shell 命令里加载 `.env.automation` 并执行 Python，这样 automation 才能感知环境变量：
+
+```bash
+if [ -f .env.automation ]; then set -a; . ./.env.automation; set +a; fi
+python scripts/daily_papers.py --config .automation/config.psy.yaml --date yesterday --stage fetch --force
+```
+
+日期参数：
+- `--date` 支持 `today`、`yesterday` 或 `YYYY-MM-DD`。
+- 日常自动化固定使用 `--date yesterday`，避免论文源当天批次尚未完全更新。
+- 如果用户明确要求补跑某天，才使用具体日期。
+
+行为心理学 pipeline：
+- 默认配置文件：`config.behavior.yaml`
+- 默认每日发现份额：
+  - OpenAlex: 30
+  - PubMed: 25
+  - PsyArXiv: 15
+  - Crossref: 20
+  - Europe PMC: 10
+  - Semantic Scholar: 只做 enrichment，不新增论文
+- 默认候选上限：100
+
+网络预检要求：
+- 脚本会先检测启用源的核心 API，包括 OpenAlex、NCBI E-utilities、OSF/PsyArXiv、Crossref、Europe PMC、Semantic Scholar。
+- 如果网络预检失败，立即停止自动化并报告网络错误。
+- 不要继续评分，不要写空日报，不要用旧候选池冒充目标日期结果。
+
+候选文件：
+- fetch 完成后读取命令输出中的候选文件路径，通常是：
+  `data/psy/processed/YYYY-MM-DD_candidates.json`
+- 同时读取：
+  `data/psy/raw/YYYY-MM-DD.json`
+- 必须检查 raw JSON 中的：
+  - `recommended_action`
+  - `duplicate_check`
+  - `source_counts`
+  - `warnings`
+- 如果 `recommended_action` 是 `write_no_new_batch_note`、`duplicate_check.recommended_action` 是 `write_no_new_batch_note`、`duplicate_check.status` 是 `duplicate_of_previous`，或目标日期 candidates 为空 / paper id 集合与最近一天 candidates 完全一致：
+  - 不要重复生成正常 Top 10 日报。
+  - 不要沿用旧 Top 10 冒充目标日期新推荐。
+  - 写一个很短的“今日无新候选批次”说明到 `reports/psy/YYYY-MM-DD-psy.md`。
+  - 说明候选数量、各源 source_counts、warnings、duplicate_check 状态。
+  - 除非用户明确要求补跑/重评，不要重写 `data/psy/processed/YYYY-MM-DD_scored.json`。
+
+如果 fetch 失败或候选池为空：
+- 检查 `logs/psy/YYYY-MM-DD.log`、`data/psy/raw/YYYY-MM-DD.json` 和 `data/psy/processed/YYYY-MM-DD_candidates.json`。
+- 如果原因是网络、代理、API 限流或源端 5xx，不要写泛化空日报。
+- 报告失败命令、错误原因、已生成文件、候选数量和建议修复方案。
+- 只有在用户明确要求 fallback 时，才可使用最近一个非空 candidates 文件生成补跑日报，并在报告开头标明来源日期。
+
+研究背景：
+- behavioral psychology
+- cognitive psychology
+- decision science
+- social psychology
+- computational behavioral science
+- cognitive neuroscience
+- behavioral medicine
+- computational psychiatry
+- human behavior modeling
+
+推荐原则：
+- 优先推荐对“理解、建模或干预人类行为”有实质贡献的论文。
+- 不要只因为论文包含 psychology / behavior / decision 等关键词就给高分。
+- 优先关注机制、实验设计、测量方法、可复用数据集、可迁移理论框架和计算模型。
+- 对医学、神经科学、社会科学交叉论文，重点判断它是否能帮助理解行为机制，而不是只看应用场景。
+- 预印本可以入选，但要更谨慎标注证据强度。
+
+重点关注：
+- working memory
+- memory
+- attention
+- decision making
+- judgment
+- choice behavior
+- cognitive bias
+- habit formation
+- motivation
+- reward learning
+- reinforcement learning
+- risk perception
+- emotion regulation
+- social behavior
+- cognitive control
+- computational behavioral science
+- human behavior
+- behavioral intervention
+- experiment design
+- measurement validity
+- replication
+- ecological validity
+
+负向过滤：
+- protein
+- gene expression
+- molecular docking
+- materials discovery
+- animal-only study
+- clinical trial protocol
+- pure questionnaire validation with little theoretical contribution
+- generic mental-health app without behavioral mechanism
+
+评分维度，每项 0-5：
+- Behavioral Relevance
+- Mechanistic Insight
+- Method / Design Quality
+- Evidence Strength
+- Novelty / Timeliness
+- Actionability for My Research
+
+综合分：
+Final Score =
+0.25 * Behavioral Relevance
++ 0.20 * Mechanistic Insight
++ 0.20 * Method / Design Quality
++ 0.15 * Evidence Strength
++ 0.10 * Novelty / Timeliness
++ 0.10 * Actionability for My Research
+
+评分输出：
+保存到：
+`data/psy/processed/YYYY-MM-DD_scored.json`
+
+建议结构：
+
+```json
+{
+  "date": "YYYY-MM-DD",
+  "status": "ok",
+  "generated_at": "...",
+  "candidate_path": "...",
+  "candidate_count": 0,
+  "source_counts": {},
+  "source_warnings": {},
+  "deep_read_ids": [],
+  "top10_ids": [],
+  "papers": [
+    {
+      "...原始候选字段": "...",
+      "semantic_scores": {
+        "behavioral_relevance": 0,
+        "mechanistic_insight": 0,
+        "method_design_quality": 0,
+        "evidence_strength": 0,
+        "novelty_timeliness": 0,
+        "actionability_for_my_research": 0,
+        "final_score": 0
+      },
+      "selected_for_deep_read": false,
+      "selected_for_top10": false,
+      "matched_keywords": [],
+      "reading_evidence": "abstract-only / paper page / pdf",
+      "semantic_rank": 0
+    }
+  ]
+}
+```
+
+阅读流程：
+1. 读取 candidates.json，先基于 title、abstract、venue/categories、retrieval_reason、citation_count、source 做逐篇语义评分。
+2. 记录命中的重点关注关键词到 `matched_keywords`。
+3. 从高分候选中选择约 15 篇进一步阅读。
+4. 对最终 Top 10 尽量打开论文页面或 PDF，阅读 abstract、introduction、method、results/discussion、conclusion。
+5. 如果只能基于 abstract 判断，必须在 `reading_evidence` 和日报中明确写明。
+6. 不要编造候选、网页或 PDF 中无法支持的信息。
+7. 不要用网页搜索补候选；只能围绕 candidates.json 中已有论文做阅读。
+
+日报输出：
+写入：
+`reports/psy/YYYY-MM-DD-psy.md`
+
+日报建议包含：
+- 今日概览
+- Source counts / source warnings
+- Top 10 Papers
+- 对于每篇论文：
+  - 匹配关键词
+  - 来源 API / venue
+  - 作者列表
+  - 证据来源：abstract-only / paper page / pdf
+  - 研究问题
+  - 行为机制或理论贡献
+  - 方法 / 实验设计
+  - 关键结果
+  - 证据是否支撑作者 claim
+  - 局限
+  - 为什么值得读
+  - 对我的研究可能有什么启发
+- 今日重点趋势
+- 潜在研究 idea
+- 值得加入 related work 的论文
+
+Obsidian 长期知识库自动维护：
+- 日报写完后，必须继续维护 Obsidian 长期论文知识库，不要在日报生成后直接结束。
+- Obsidian vault 路径固定为：
+  /Users/liaoweiduo/Library/CloudStorage/OneDrive-Personal/Researchs/obsidian sync/knowledge
+- 先读取并遵守：
+  /Users/liaoweiduo/Library/CloudStorage/OneDrive-Personal/Researchs/obsidian sync/knowledge/Knowledge Protocol.md
+- 当前 vault 中已有：
+  - Daily Papers/：每日完整日报；`reports/` 已软链接到这里。
+  - Papers/：长期精选论文数据库，每篇论文一个 Markdown note。
+  - Concepts/：长期概念页。
+  - Ideas/：研究想法页。
+  - Bases/：Obsidian Bases 数据库视图，包括 By Author.base。
+
+Obsidian 入库筛选：
+1. 从当天日报和 `data/psy/processed/YYYY-MM-DD_scored.json` 中初筛高度相关论文。
+2. 每天只选择 1-5 篇最值得长期保留的论文进入 `Papers/`。
+3. 长期数据库不要求论文必须是 PDF-backed；所有决定长期保存的论文都可以进入 `Papers/`。
+4. `reading_evidence` 可以是 `pdf`、`paper page` 或 `abstract-only`。
+5. 有 `pdf_url` 时应尽量下载 PDF 并抽取 text；如果 PDF 或 PDF text 不可用，仍可入库，但必须明确标注 `pdf_backed: false`、`reading_evidence` 和 `source_evidence`。
+6. abstract-only note 必须更克制，避免写超出摘要支持的信息。
+
+Obsidian paper note 写入规则：
+- 路径格式：
+  /Users/liaoweiduo/Library/CloudStorage/OneDrive-Personal/Researchs/obsidian sync/knowledge/Papers/YYYY/YYYY-MM-DD-psy - short-title.md
+- 文件名中的 `short-title` 优先使用论文核心贡献、理论、任务或数据集名字，使用英文小写 slug，去掉特殊符号，避免过长。
+- 每篇 paper note 必须有 YAML properties，至少包含：
+  - `type: paper`
+  - `title`
+  - `paper_id`
+  - `source`
+  - `authors`
+  - `published`
+  - `discovered`
+  - `url`
+  - `pdf_url`（如有）
+  - `pdf_backed: true/false`
+  - `pdf_text_source`（如有）
+  - `source_evidence`
+  - `daily_report: "[[YYYY-MM-DD-psy]]"`
+  - `status: durable`
+  - `final_score`
+  - `reading_evidence: pdf / paper page / abstract-only`
+  - `topics`
+  - `method_tags`
+  - `relevance`
+  - `durability`
+- 正文至少包含：
+  - 一句话总结
+  - Source Evidence / PDF Metadata（如有）
+  - 核心问题
+  - 行为机制或理论贡献
+  - 方法 / 实验设计
+  - 实验证据
+  - Claim 是否被实验支撑
+  - 和我的研究的关系
+  - 局限与风险
+  - 可迁移 idea
+  - Links
+- 正文尽量使用中文，但保留专用科研术语的英文名称。
+- 内部链接使用 Obsidian WikiLinks，例如 `[[Decision Making]]`；外部论文链接使用普通 URL。
+
+Concepts / Ideas 自动维护：
+- 对每篇入库论文，必须更新或创建相关 `Concepts/` 页面。
+- 如果论文产生了可执行研究方向，必须更新或创建相关 `Ideas/` 页面。
+- 不要只在 paper note 里写孤立总结；要把可复用概念、方法、failure mode、评估协议沉淀到 Concepts 或 Ideas 的正文中，并加上相应 Obsidian 链接。
+- Concepts 和 Ideas 使用 `type: concept` / `type: idea` properties，保证 Bases 可检索。
+
+日报反链规则：
+- 对当天 `reports/psy/YYYY-MM-DD-psy.md` 中已经创建或更新了 Obsidian paper note 的 Top 10 条目，添加一行：
+  - Obsidian 详情：[[YYYY-MM-DD-psy - short-title]]
+- `[[YYYY-MM-DD-psy - short-title]]` 必须与实际创建的 paper note 文件名 basename 完全一致，不包含 `.md`。
+- 只给实际进入 `Papers/` 的论文添加 Obsidian 详情链接；未入长期库的论文不要添加假链接。
+- 如果重复运行，不要重复插入同一条 `Obsidian 详情` 链接。
+- 日报反链更新完成后，`reports/psy/YYYY-MM-DD-psy.md` 仍然必须保持可读，原有摘要、排名和结论不得被删除。
+
+最后回复用户：
+- 目标日期
+- source_counts
+- 今日候选数量
+- Top 10 标题
+- scored.json 路径
+- 日报路径
+- Obsidian 新增/更新了哪些 paper / concept / idea notes
+- 任何失败源、网络/API/rate-limit 问题、缺失环境变量或 abstract-only 限制
+
+禁止：
+- 禁止只调用脚本就结束。
+- 禁止让 LLM/Codex 自己搜索论文来替代 candidates.json。
+- 禁止直接使用关键词模板生成最终报告。
+- 禁止没阅读候选内容就总结。
+- 禁止生成大量重复套话。
+- 禁止因为论文命中领域关键词就给高分。
+- 禁止编造 PDF、网页或正文中没有的信息。
+- 禁止打印 API key。
+- 禁止自动 git push。

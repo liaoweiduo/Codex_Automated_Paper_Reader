@@ -1,0 +1,14 @@
+# Optional conference-only overrides. This file is not scheduled.
+conference:
+  max_results: 50000
+  candidate_limit: 500
+  # invitation: ICML.cc/2026/Conference/-/Paper
+  # Optional high-level grouping rules. Each paper is assigned to the first
+  # direction whose keyword appears in title, abstract, or categories.
+  # directions:
+  #   Multimodal and VLM: [vision-language model, multimodal, cross-modal]
+  #   Adaptation and Continual Learning: [test-time adaptation, continual learning]
+
+# The command reuses research_profile and sources.openreview from config.yaml.
+# For conferences with official virtual-site exports, pass --source-url and
+# --abstracts-url; for OpenReview-only venues, pass --invitation when needed.

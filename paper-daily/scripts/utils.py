@@ -238,6 +238,16 @@ def network_preflight_urls(config: dict[str, Any], enabled_sources: list[str]) -
         urls.extend(["https://openreview.net/", "https://api2.openreview.net/"])
     if "openalex" in enabled_sources:
         urls.append("https://api.openalex.org/")
+    if "pubmed" in enabled_sources:
+        urls.append("https://eutils.ncbi.nlm.nih.gov/")
+    if "psyarxiv" in enabled_sources:
+        urls.append("https://api.osf.io/")
+    if "crossref" in enabled_sources:
+        urls.append("https://api.crossref.org/")
+    if "europepmc" in enabled_sources:
+        urls.append("https://www.ebi.ac.uk/europepmc/webservices/rest/")
+    if "semantic_scholar" in enabled_sources:
+        urls.append("https://api.semanticscholar.org/")
     return unique_preserve_order(urls)
 
 

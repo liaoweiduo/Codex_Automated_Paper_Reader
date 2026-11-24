@@ -2,14 +2,14 @@
 
 > 中文 | [English](README.en.md)
 
-CAPR 是一个用 Codex 自动化完成每日论文候选检索、语义筛选和学术日报生成的轻量级工作流。
+CAPR 是一个用 Python 自动化完成每日论文候选检索，并用 Codex 完成语义筛选和学术日报生成的轻量级工作流。
 
 它把任务拆成两个层次：
 
-1. `paper-daily` 脚本只负责从 arXiv / OpenReview / 可选 OpenAlex 抓取候选论文、统一元数据、去重和粗排序。
+1. `paper-daily` 脚本只负责从确定性的论文 API / 订阅源抓取候选论文、统一元数据、去重和粗排序。
 2. Codex 作为科研助理读取候选池，逐篇语义评分，选择高价值论文，并撰写最终 Markdown 日报。
 
-核心原则：脚本只提供候选池和可解释的检索线索，最终推荐与总结由 Codex 完成。
+核心原则：脚本负责搜索、拉取和候选池构建；Codex/LLM 只负责阅读候选的 abstract、paper page 或 PDF，并完成分析写作。
 
 
 ## 🖼️ Daily Report预览
@@ -22,10 +22,12 @@ CAPR 是一个用 Codex 自动化完成每日论文候选检索、语义筛选�
 
 - **2026-05-18** ✨ 新增 OpenAlex 抓取源：可与 arXiv / OpenReview 并列参与候选池构建，但在默认配置中保持关闭，避免改变日常主流程。
 - **2026-05-18** ⚙️ 修复 arXiv 日报抓取逻辑：HTML recent-list 公告日期优先；无新批次或候选池重复时输出说明简报，不再复用旧批次。
+- **2026-06-23** 🧠 新增行为心理学每日阅读配置：`config.behavior.yaml` 聚合 OpenAlex、PubMed、PsyArXiv、Crossref、Europe PMC，并用 Semantic Scholar 做可选引用增强。
 
 ## ✨ 功能特性
 
-- 从 arXiv 和 OpenReview 抓取近期论文候选，并提供默认关闭的 OpenAlex 可选抓取源。
+- 从 arXiv、OpenReview、OpenAlex、PubMed、PsyArXiv、Crossref、Europe PMC 等确定性来源抓取近期论文候选。
+- 提供 `config.yaml` 机器学习 profile 和 `config.behavior.yaml` 行为心理学 profile。
 - 将不同来源论文统一为一致的 JSON schema。
 - 基于 source ID 和标准化标题去重。
 - 用透明的规则分数提供候选粗排线索。
@@ -45,6 +47,7 @@ Codex_Automated_Paper_Reader/
 ├── LICENSE
 └── paper-daily/
     ├── config.yaml
+    ├── config.behavior.yaml
     ├── requirements.txt
     ├── tutorial/
     │   ├── daily report.png
@@ -52,8 +55,13 @@ Codex_Automated_Paper_Reader/
     ├── scripts/
     │   ├── daily_papers.py
     │   ├── fetch_arxiv.py
+    │   ├── fetch_crossref.py
+    │   ├── fetch_europepmc.py
     │   ├── fetch_openalex.py
     │   ├── fetch_openreview.py
+    │   ├── fetch_osf_psyarxiv.py
+    │   ├── fetch_pubmed.py
+    │   ├── enrich_semantic_scholar.py
     │   ├── rank_papers.py
     │   └── utils.py
     └── tests/
@@ -98,6 +106,12 @@ python -m venv .venv-win
 
 ```bash
 python scripts/daily_papers.py --config config.yaml --date yesterday --stage fetch --force
+```
+
+行为心理学每日阅读：
+
+```bash
+python scripts/daily_papers.py --config config.behavior.yaml --date yesterday --stage fetch --force
 ```
 
 输出文件：
@@ -192,6 +206,44 @@ cp ../Paper_Reader.template.en.txt ../Paper_Reader.txt
 - 候选数量上限
 - arXiv retry 和 HTML fallback 行为
 - 输出目录
+
+编辑 `paper-daily/config.behavior.yaml` 可运行行为心理学 profile。默认每日候选份额为 OpenAlex 30、PubMed 25、PsyArXiv 15、Crossref 20、Europe PMC 10，总计 100 条；Semantic Scholar 只做引用和 OA PDF metadata 增强，不新增搜索结果。
+
+## 会议结束后的论文集抓取
+
+会议论文 release 后，不要改 daily schedule，直接手动运行独立入口：
+
+```bash
+cd Codex_Automated_Paper_Reader/paper-daily
+python scripts/conference_papers.py \
+  --config config.yaml \
+  --conference ICML \
+  --year 2026 \
+  --candidate-limit 500 \
+  --force \
+  --obsidian-root "/Users/liaoweiduo/Library/CloudStorage/OneDrive-Personal/Researchs/obsidian sync/knowledge"
+```
+
+它会复用相同的研究方向配置，先按 `positive_keywords` 过滤，再按 daily 的检索分数排序，会议默认保留 500 条，然后按方向生成会议 JSON/Markdown，并在 Obsidian 的 `Research Notes` 下生成总览文档。随后可用 `process_conference_paper.py` 按队列顺序逐篇下载 PDF、写入 `Papers/2026`，完成后自动勾选标题。其他会议可用 `--source-url` 与 `--abstracts-url` 指定官方数据，或追加 `--invitation` 使用 OpenReview fallback；会议专用输出与 daily 输出目录隔离，不会创建 schedule。
+
+### 🔑 API key 和订阅源 TODO
+
+多数源不强制要求私有 key，但建议你按需配置：
+
+```bash
+export NCBI_EMAIL="you@example.com"
+export NCBI_API_KEY="..."
+export OPENALEX_API_KEY="..."
+export SEMANTIC_SCHOLAR_API_KEY="..."
+```
+
+TODO:
+
+1. 设置 `NCBI_EMAIL`，让 PubMed/NCBI 请求带上联系人。
+2. 可选：在 NCBI 账号里申请 API key，设置 `NCBI_API_KEY` 提高 E-utilities 限额。
+3. 可选：设置 `OPENALEX_API_KEY` 和 `SEMANTIC_SCHOLAR_API_KEY`，用于更稳定的广域索引和引用增强。
+4. 根据你的真实阅读范围，在 `config.behavior.yaml` 里维护 Crossref `issns` 期刊列表。
+5. 如果你有 PsycINFO/EBSCO 等机构订阅 API，再新增专门 fetcher；不要让 LLM 替代订阅库搜索。
 
 ### 🌐 代理说明
 

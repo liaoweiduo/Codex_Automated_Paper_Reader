@@ -15,9 +15,14 @@ from pathlib import Path
 from typing import Any
 
 from fetch_arxiv import fetch_arxiv
+from fetch_crossref import fetch_crossref
+from fetch_europepmc import fetch_europepmc
 from fetch_openalex import fetch_openalex
 from fetch_openreview import fetch_openreview
+from fetch_osf_psyarxiv import fetch_psyarxiv
+from fetch_pubmed import fetch_pubmed
 from rank_papers import build_candidate_pool
+from enrich_semantic_scholar import enrich_semantic_scholar
 from utils import (
     dedupe_papers,
     ensure_dirs,
@@ -137,6 +142,44 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, Any]:
         source_counts["openalex"] = len(papers)
         source_warnings["openalex"] = warnings
 
+    if "pubmed" in enabled_sources:
+        source_config = config.get("sources", {}).get("pubmed", {})
+        lookback = args.lookback_days or int(source_config.get("lookback_days", 1))
+        papers, warnings = fetch_pubmed(source_config, research_profile, report_date, lookback, logger)
+        all_papers.extend(papers)
+        source_counts["pubmed"] = len(papers)
+        source_warnings["pubmed"] = warnings
+
+    if "psyarxiv" in enabled_sources:
+        source_config = config.get("sources", {}).get("psyarxiv", {})
+        lookback = args.lookback_days or int(source_config.get("lookback_days", 1))
+        papers, warnings = fetch_psyarxiv(source_config, research_profile, report_date, lookback, logger)
+        all_papers.extend(papers)
+        source_counts["psyarxiv"] = len(papers)
+        source_warnings["psyarxiv"] = warnings
+
+    if "crossref" in enabled_sources:
+        source_config = config.get("sources", {}).get("crossref", {})
+        lookback = args.lookback_days or int(source_config.get("lookback_days", 1))
+        papers, warnings = fetch_crossref(source_config, research_profile, report_date, lookback, logger)
+        all_papers.extend(papers)
+        source_counts["crossref"] = len(papers)
+        source_warnings["crossref"] = warnings
+
+    if "europepmc" in enabled_sources:
+        source_config = config.get("sources", {}).get("europepmc", {})
+        lookback = args.lookback_days or int(source_config.get("lookback_days", 1))
+        papers, warnings = fetch_europepmc(source_config, research_profile, report_date, lookback, logger)
+        all_papers.extend(papers)
+        source_counts["europepmc"] = len(papers)
+        source_warnings["europepmc"] = warnings
+
+    if "semantic_scholar" in enabled_sources:
+        source_config = config.get("sources", {}).get("semantic_scholar", {})
+        all_papers, warnings = enrich_semantic_scholar(all_papers, source_config, logger)
+        source_counts["semantic_scholar"] = len(all_papers)
+        source_warnings["semantic_scholar"] = warnings
+
     deduped = dedupe_papers(all_papers)
     logger.info("Total papers fetched=%s, deduped=%s", len(all_papers), len(deduped))
 
@@ -212,7 +255,7 @@ def resolve_enabled_sources(args: argparse.Namespace, config: dict[str, Any]) ->
             for name, source_config in config.get("sources", {}).items()
             if source_config.get("enabled", True)
         ]
-    supported = {"arxiv", "openreview", "openalex"}
+    supported = {"arxiv", "openreview", "openalex", "pubmed", "psyarxiv", "crossref", "europepmc", "semantic_scholar"}
     return [source for source in requested if source in supported]
 
 

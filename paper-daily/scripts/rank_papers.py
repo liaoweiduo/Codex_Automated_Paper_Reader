@@ -202,6 +202,11 @@ def candidate_schema(paper: dict[str, Any]) -> dict[str, Any]:
         "matched_keywords",
         "negative_matches",
         "coarse_retrieval_score",
+        "doi",
+        "citation_count",
+        "influential_citation_count",
+        "semantic_scholar_id",
+        "semantic_scholar_url",
     ]
     return {field: paper.get(field, [] if field in {"authors", "categories"} else "") for field in fields}
 

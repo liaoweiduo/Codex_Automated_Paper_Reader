@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "_说明": "主要编辑 level0、level1、level2 数组。可直接填中文字符串；需要提高检索召回时，填带 label 和 queries 的对象。示例分级可自由移动。level0=提醒+精读入库，level1=高匹配精读入库且静默，level2=日报简析。",
+  "level0": [
+    {
+      "id": "things-dataset",
+      "label": "THINGS 数据集的相关工作：THINGS、THINGS-EEG、THINGS-MEG、THINGS-fMRI 及其物体概念与人类表征建模",
+      "queries": [
+        "THINGS dataset",
+        "THINGS EEG",
+        "THINGS MEG",
+        "THINGS fMRI"
+      ]
+    },
+    {
+      "id": "ai-cognitive-psychology",
+      "label": "人工智能在认知心理方向的研究：以 AI 建模、解释或预测人类认知与行为，或用人类认知证据评估模型",
+      "queries": [
+        "artificial intelligence cognitive psychology",
+        "language models human cognition",
+        "computational cognitive modeling"
+      ]
+    },
+    {
+      "id": "compositional-generalization",
+      "label": "组合泛化",
+      "queries": [
+        "compositional generalization",
+        "compositional reasoning",
+        "compositionality"
+      ]
+    }
+  ],
+  "level1": [
+    {
+      "id": "sae-optimization",
+      "label": "SAE 的优化：稀疏自编码器的训练目标、架构、稀疏性与重构权衡、特征质量和训练效率",
+      "queries": [
+        "sparse autoencoder optimization",
+        "sparse autoencoder training",
+        "sparse autoencoder feature quality"
+      ]
+    },
+    {
+      "id": "continual-learning",
+      "label": "持续学习",
+      "queries": [
+        "continual learning",
+        "lifelong learning"
+      ]
+    },
+    {
+      "id": "multi-objective-optimization",
+      "label": "多目标优化",
+      "queries": [
+        "multi-objective optimization"
+      ]
+    },
+    {
+      "id": "large-multimodal-foundation-models",
+      "label": "大型多模态基础模型",
+      "queries": [
+        "large multimodal foundation models",
+        "multimodal large language models"
+      ]
+    }
+  ],
+  "level2": [
+    {
+      "id": "test-time-adaptation",
+      "label": "测试时适应",
+      "queries": [
+        "test-time adaptation"
+      ]
+    },
+    {
+      "id": "concept-bottleneck",
+      "label": "概念瓶颈模型",
+      "queries": [
+        "concept bottleneck models"
+      ]
+    }
+  ],
+  "thresholds": {
+    "level0": 0.7,
+    "level1": 0.8,
+    "level2": 0.6
+  },
+  "lookback_days": 3,
+  "vault": "/Users/liaoweiduo/Library/CloudStorage/OneDrive-Personal/Researchs/obsidian sync/knowledge",
+  "arxiv_categories": [
+    "cs.AI",
+    "cs.LG",
+    "cs.CL",
+    "cs.CV",
+    "cs.NE",
+    "stat.ML",
+    "q-bio.NC"
+  ],
+  "sources": {
+    "arxiv": {
+      "enabled": true,
+      "max_results": 3000,
+      "html_recent_authoritative": true,
+      "html_fallback_enabled": true,
+      "html_fallback_per_category": 2000,
+      "html_fallback_max_results": 3000,
+      "html_fallback_sleep_seconds": 0.3
+    },
+    "openreview": {
+      "enabled": true,
+      "venues": [
+        "ICLR",
+        "ICML",
+        "NeurIPS",
+        "TMLR",
+        "COLM"
+      ],
+      "max_results": 300,
+      "auto_renew": true
+    },
+    "nature": {
+      "enabled": true,
+      "feeds": {
+        "Nature": "https://www.nature.com/nature.rss",
+        "Nature Human Behaviour": "https://www.nature.com/nathumbehav.rss",
+        "Nature Machine Intelligence": "https://www.nature.com/natmachintell.rss",
+        "Nature Neuroscience": "https://www.nature.com/neuro.rss",
+        "Nature Communications": "https://www.nature.com/ncomms.rss"
+      }
+    },
+    "openalex": {
+      "enabled": true,
+      "max_results": 300,
+      "per_page": 50,
+      "api_key_env": "OPENALEX_API_KEY"
+    },
+    "pubmed": {
+      "enabled": true,
+      "max_results": 100,
+      "api_key_env": "NCBI_API_KEY"
+    },
+    "europepmc": {
+      "enabled": true,
+      "max_results": 100,
+      "retries": 0
+    },
+    "google_scholar": {
+      "enabled": true,
+      "inbox_dir": "data/scholar-inbox",
+      "lookback_days": 7,
+      "transport": "gmail",
+      "email": "liaoweiduo@gmail.com"
+    }
+  },
+  "access_reminders": {
+    "level1_min_confidence": 0.9
+  },
+  "selection": {
+    "report_limit": 10,
+    "archive_limit": 5
+  }
+}

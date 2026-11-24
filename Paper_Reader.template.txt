@@ -106,6 +106,7 @@ data/processed/YYYY-MM-DD_scored.json
       },
       "selected_for_deep_read": false,
       "selected_for_top10": false,
+      "matched_keywords": [],
       "reading_evidence": "abstract-only / paper page / pdf",
       "semantic_rank": 0
     }
@@ -113,7 +114,7 @@ data/processed/YYYY-MM-DD_scored.json
 }
 
 阅读流程：
-1. 读取 candidates.json，先基于 title、abstract、venue/categories、retrieval_reason 做逐篇语义评分。
+1. 读取 candidates.json，先基于 title、abstract、venue/categories、retrieval_reason 做逐篇语义评分，并记录命中的重点关注关键词到 `matched_keywords`。
 2. 从高分候选中选择约 15 篇进一步阅读。
 3. 对最终 Top 10 尽量打开论文页面或 PDF，阅读 abstract、introduction、method、experiments、conclusion。
 4. 如果只能基于 abstract 判断，必须在 `reading_evidence` 和日报中明确写明。
@@ -126,7 +127,16 @@ reports/YYYY-MM-DD.md
 日报建议包含：
 - 今日概览
 - Top 10 Papers
-- 每篇论文的核心方法、迁移价值、可转化实验/模块、局限、阅读建议、证据来源
+- 对于每篇论文
+  - 匹配关键词
+  - 证据来源
+  - 研究的问题
+  - 核心方法：先用一句话总结，然后如果能够打开论文页面或PDF，仔细讲讲方法的创新点，例如框架的流程，提出的关键技术
+  - 迁移价值
+  - 实验的设置以及相应的关键结论
+  - 实验是否支撑作者的claim
+  - 局限
+  - 阅读建议
 - 今日重点趋势
 - 潜在研究 idea
 - 值得加入 related work 的论文

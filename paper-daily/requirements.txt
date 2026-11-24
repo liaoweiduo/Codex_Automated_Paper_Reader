@@ -4,3 +4,5 @@ python-dateutil>=2.8.2
 openreview-py>=1.48.0
 feedparser>=6.0.10
 pytest>=7.0.0
+pdfplumber>=0.11.0
+pypdf>=5.0.0

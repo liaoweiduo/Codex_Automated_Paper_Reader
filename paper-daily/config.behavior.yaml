@@ -1,0 +1,137 @@
+research_profile:
+  language: en
+  goal: >
+    Find recent papers in behavioral psychology, decision science, cognitive
+    psychology, social psychology, emotion, motivation, habit formation, risk
+    perception, judgment, choice behavior, and computational behavioral science.
+  background_topics:
+    - behavioral psychology
+    - cognitive psychology
+    - decision science
+    - social psychology
+    - computational psychiatry
+    - cognitive neuroscience
+    - behavioral medicine
+  positive_keywords:
+    - behavioral psychology
+    - decision making
+    - judgment
+    - choice behavior
+    - cognitive bias
+    - habit formation
+    - motivation
+    - reward learning
+    - reinforcement learning
+    - risk perception
+    - emotion regulation
+    - social behavior
+    - cognitive control
+    - attention
+    - memory
+    - computational behavioral science
+    - human behavior
+  negative_keywords:
+    - protein
+    - gene expression
+    - molecular docking
+    - materials discovery
+    - animal-only study
+    - clinical trial protocol
+  target_journals:
+    - Psychological Science
+    - Cognition
+    - Journal of Experimental Psychology: General
+    - Journal of Behavioral Decision Making
+    - Behavior Research Methods
+    - Emotion
+    - Cognitive Psychology
+    - Decision
+
+sources:
+  arxiv:
+    enabled: false
+  openreview:
+    enabled: false
+  openalex:
+    enabled: true
+    lookback_days: 1
+    max_results: 30
+    per_page: 30
+    max_auto_queries: 6
+    search_queries:
+      - behavioral psychology decision making
+      - cognitive bias judgment choice behavior
+      - habit formation reward learning motivation
+      - emotion regulation social behavior
+      - risk perception cognitive control
+      - computational behavioral science human behavior
+    mailto: ""
+    api_key_env: OPENALEX_API_KEY
+    api_key: ""
+  pubmed:
+    enabled: true
+    lookback_days: 1
+    max_results: 25
+    date_type: pdat
+    email: ""
+    tool: paper-daily
+    api_key_env: NCBI_API_KEY
+    api_key: ""
+    search_queries:
+      - >
+        ("decision making"[Title/Abstract] OR "cognitive bias"[Title/Abstract]
+        OR "habit formation"[Title/Abstract] OR "motivation"[Title/Abstract]
+        OR "emotion regulation"[Title/Abstract] OR "risk perception"[Title/Abstract]
+        OR "social behavior"[Title/Abstract] OR "cognitive control"[Title/Abstract])
+  psyarxiv:
+    enabled: true
+    lookback_days: 1
+    max_results: 15
+    provider: psyarxiv
+    search_queries:
+      - decision making
+      - cognitive bias
+      - habit formation
+      - emotion regulation
+      - social behavior
+  crossref:
+    enabled: true
+    lookback_days: 1
+    max_results: 20
+    mailto: ""
+    type: journal-article
+    issns:
+      - 0956-7976  # Psychological Science
+      - 0010-0277  # Cognition
+      - 0096-3445  # Journal of Experimental Psychology: General
+      - 0894-3257  # Journal of Behavioral Decision Making
+      - 1554-351X  # Behavior Research Methods
+      - 1528-3542  # Emotion
+  europepmc:
+    enabled: true
+    lookback_days: 1
+    max_results: 10
+    retries: 1
+    retry_after_seconds: 2
+    search_queries:
+      - >
+        "decision making" OR "cognitive bias" OR "habit formation"
+        OR "emotion regulation" OR "risk perception" OR "cognitive control"
+  semantic_scholar:
+    enabled: true
+    max_results: 100
+    api_key_env: SEMANTIC_SCHOLAR_API_KEY
+    api_key: ""
+
+network:
+  preflight_enabled: true
+  preflight_timeout_seconds: 20
+  preflight_retries: 1
+
+output:
+  report_dir: reports
+  data_dir: data
+  log_dir: logs
+
+retrieval:
+  candidate_limit: 100

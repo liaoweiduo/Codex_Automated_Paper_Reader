@@ -9,8 +9,10 @@ schedule or its output files.
 
 ## Scope
 
-- The first supported source is OpenReview, because ICML 2026 exposes a public
-  OpenReview venue.
+- The first supported sources are official conference JSON exports and
+  OpenReview. ICML 2026 exposes official virtual-site JSON plus a public
+  OpenReview venue; the official export is preferred because it includes the
+  released abstracts without requiring an API challenge flow.
 - The command accepts a conference name, year, and optional invitation override.
 - It fetches the conference collection without the daily date-window filter.
 - It reuses the existing paper schema, normalization, deduplication, and profile
@@ -31,12 +33,12 @@ schedule or its output files.
 
 ## Architecture
 
-`conference_papers.py` is a separate CLI and orchestration layer. It calls a
-new OpenReview venue-fetch helper that shares the existing normalization helper
-but does not share the daily date filtering. The orchestration layer scores and
-groups normalized papers, writes a JSON snapshot and a Markdown report, and
-uses an explicit Obsidian path so local vault layout is not hard-coded into the
-daily pipeline.
+`conference_papers.py` is a separate CLI and orchestration layer. It can load
+official conference JSON/abstract exports or call a new OpenReview venue-fetch
+helper that shares the existing normalization helper but does not share the
+daily date filtering. The orchestration layer scores and groups normalized
+papers, writes a JSON snapshot and a Markdown report, and uses an explicit
+Obsidian path so local vault layout is not hard-coded into the daily pipeline.
 
 The configuration is layered: `--config config.yaml` remains the source of the
 research profile and OpenReview connection settings; conference-specific

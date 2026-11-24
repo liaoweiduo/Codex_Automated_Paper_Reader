@@ -1,5 +1,6 @@
 # Private prompt files with machine-specific paths or preferences
 Paper_Reader.txt
+paper-daily/.env.automation
 
 # Python
 __pycache__/
@@ -32,3 +33,16 @@ paper-daily/reports/
 *.tmp
 *.bak
 *.swp
+.openreview_access_token
+paper-daily/.openreview_access_token
+
+# Local automation migration backup
+paper-daily/.automation/backups/
+paper-daily/.automation/smoke_unified.py
+
+# OneDrive runtime storage: ignore compatibility symlinks too
+paper-daily/data
+paper-daily/tmp
+
+# Machine-specific report link
+paper-daily/reports

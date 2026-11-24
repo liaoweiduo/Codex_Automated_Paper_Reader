@@ -1,0 +1,124 @@
+research_profile:
+  language: en
+  goal: 'Find general AI method papers that may inspire machine learning research,
+    multimodal learning, continual learning, compositionality, sparse representation,  adaptation,
+    multi-objective optimization, multi-objective alignment.
+
+    '
+  background_topics:
+  - machine learning
+  - sparse representation learning
+  - multimodal learning
+  - test-time adaptation
+  - continual learning
+  - compositionality
+  - multi-objective optimization
+  - multi-objective alignment
+  - vision-language model
+  positive_keywords:
+  - sparse autoencoder
+  - concept representation
+  - compositional representation
+  - concept-enhanced training
+  - compositional generalization
+  - disentangled representation
+  - invariant representation
+  - contrastive learning
+  - self-supervised learning
+  - masked modeling
+  - masked autoencoder
+  - latent variable model
+  - prototype learning
+  - metric learning
+  - out-of-distribution
+  - online adaptation
+  - test-time adaptation
+  - continual learning
+  - domain adaptation
+  - domain generalization
+  - distribution shift
+  - representation drift
+  - language model integration
+  - retrieval-augmented generation
+  - diffusion model
+  - multimodal alignment
+  - cross-modal representation learning
+  - attention mechanism
+  - foundation model
+  - scientific machine learning
+  - vision-language model
+  - world model
+  negative_keywords:
+  - protein folding
+  - recommender system
+  - materials discovery
+  - web scraper
+  - vulnerability fixing
+  - tutoring system
+  - financial forecasting
+  arxiv_categories:
+  - cs.LG
+  - cs.AI
+  - cs.CL
+  - cs.CV
+  - cs.MM
+  - cs.IR
+  - cs.SD
+  - cs.NE
+  - eess.SP
+  - stat.ML
+  preferred_venues:
+  - NeurIPS
+  - ICML
+  - ICLR
+  - CVPR
+  - ICCV
+  - ECCV
+  - ACL
+  - EMNLP
+  - NAACL
+  - COLM
+  - TMLR
+  - AAAI
+  - IJCAI
+  - KDD
+  - WWW
+  - TheWebConf
+  - SIGIR
+sources:
+  arxiv:
+    enabled: true
+    lookback_days: 3
+    max_results: 200
+    retries: 0
+    retry_after_seconds: 20
+    html_fallback_enabled: true
+    max_api_failures_before_html: 1
+    html_fallback_per_category: 50
+    html_fallback_max_results: 100
+    html_fallback_sleep_seconds: 0.25
+  openreview:
+    enabled: true
+    venues:
+    - ICLR
+    - NeurIPS
+    - ICML
+    - TMLR
+    - COLM
+    max_results: 100
+  openalex:
+    enabled: false
+    lookback_days: 3
+    max_results: 100
+    per_page: 50
+    max_auto_queries: 5
+    search_queries: []
+    mailto: ''
+    api_key_env: OPENALEX_API_KEY
+    api_key: ''
+output:
+  report_dir: ../reports/cs
+  data_dir: ../data/cs
+  log_dir: ../logs/cs
+retrieval:
+  candidate_limit: 100

@@ -1,0 +1,313 @@
+# Paper Reader 自动化 Prompt 模板（中文）
+
+项目定位：
+- `paper-daily` 只是候选检索脚本工具，不是日报生成器。
+- Codex 必须作为科研助理阅读候选、语义评分、排序、总结，并写入最终日报。
+
+运行方式：
+- 使用 Codex standalone automation。
+- 如果自动化配置可以指定 `cwd`，请设为你的本地 `paper-daily` 目录。
+- 不要切换到其他同名或旧路径项目。
+
+本地路径：
+/Users/liaoweiduo/Documents/Github/Codex_Automated_Paper_Reader/paper-daily
+
+路径要求：
+- 所有相对路径都必须以 `paper-daily` 目录为基准。
+- 使用你的 Python 可执行文件，例如：.venv/bin/python
+- 本 automation 的命名空间固定为：`cs`
+- 本 automation 的所有输出都必须写入 `cs` 专用路径，禁止写入无命名空间的默认路径。
+
+输出隔离规则：
+- 候选与 raw JSON 目录：`data/cs/`
+- 日志目录：`logs/cs/`
+- 日报目录：`reports/cs/`
+- 评分文件：`data/cs/processed/YYYY-MM-DD_scored.json`
+- 日报文件：`reports/cs/YYYY-MM-DD-cs.md`
+- 深读临时文件：`tmp/deep_read_cs_YYYY-MM-DD/`
+- 如果同一天另一个 automation 也在运行，不要读取或写入 `data/psy/`、`logs/psy/`、`reports/psy/`。
+
+第一步：创建或更新本 automation 专用 config。
+必须先在 `paper-daily` 目录执行下面命令，生成 `.automation/config.cs.yaml`，再运行候选检索。这个 config 只改输出目录，不改研究主题和抓取源。
+
+```bash
+mkdir -p .automation
+python - <<'PY'
+from pathlib import Path
+import yaml
+
+src = Path("config.yaml")
+dst = Path(".automation/config.cs.yaml")
+config = yaml.safe_load(src.read_text())
+config.setdefault("output", {})
+config["output"]["data_dir"] = "data/cs"
+config["output"]["report_dir"] = "reports/cs"
+config["output"]["log_dir"] = "logs/cs"
+dst.write_text(yaml.safe_dump(config, sort_keys=False, allow_unicode=True))
+PY
+```
+
+第二步：只运行候选检索，不要让脚本生成日报：
+python scripts/daily_papers.py --config .automation/config.cs.yaml --date yesterday --stage fetch --force
+
+网络预检要求：
+- 脚本会先检测 `export.arxiv.org`、`arxiv.org`、`openreview.net`、`api2.openreview.net` 等核心网址。
+- 如果网络预检失败，立即停止自动化并报告网络错误。
+- 不要继续评分，不要写空日报，不要用旧候选池冒充当天结果。
+
+候选文件：
+- fetch 完成后读取命令输出中的候选文件路径，通常是：
+  data/cs/processed/YYYY-MM-DD_candidates.json
+- 同时读取 `data/cs/raw/YYYY-MM-DD.json` 中的 `recommended_action` 和 `duplicate_check`。
+- 如果 `recommended_action` 是 `write_no_new_batch_note`、`duplicate_check.recommended_action` 是 `write_no_new_batch_note`、`duplicate_check.status` 是 `duplicate_of_previous`，或当天 candidates 为空 / paper id 集合与最近一天 candidates 完全一致：
+  - 不要重复生成正常 Top 10 日报。
+  - 不要沿用旧 Top 10 冒充当天新推荐。
+  - 写一个很短的“今日无新候选批次”说明到 `reports/cs/YYYY-MM-DD-cs.md`，注明候选数量、最近可见 arXiv 批次、主要原因（例如 arXiv 今日 recent-list 尚未更新、当天无公告批次、或候选池与上一批重复）。
+  - 除非用户明确要求补跑/重评，不要重写 `data/cs/processed/YYYY-MM-DD_scored.json`。
+
+如果 fetch 失败或候选池为空：
+- 检查 `logs/cs/YYYY-MM-DD.log`、`data/cs/raw/YYYY-MM-DD.json` 和 `data/cs/processed/YYYY-MM-DD_candidates.json`。
+- 如果原因是网络、代理、arXiv 或 OpenReview 访问失败，不要写泛化空日报。
+- 报告失败命令、错误原因、已生成文件、候选数量和建议修复方案。
+- 只有在用户明确要求 fallback 时，才可使用最近一个非空 candidates 文件生成补跑日报，并在报告开头标明来源日期。
+
+研究背景：
+- machine learning
+- sparse representation learning
+- multimodal learning
+- test-time adaptation
+- continual learning
+- compositionality
+- multi-objective optimization
+- multi-objective alignment
+- vision-language model
+
+推荐原则：
+- 优先推荐能迁移到研究问题中的通用 AI 方法论文。
+- 不要只因为论文包含领域关键词就给高分。
+- 相邻领域论文只要方法可迁移，也可以高分。
+- 对直接领域论文也要看方法贡献、实验质量和可复用价值。
+
+重点关注：
+- sparse autoencoder
+- concept representation
+- compositional representation
+- concept-enhanced training
+- compositional generalization
+- disentangled representation
+- invariant representation
+- contrastive learning
+- self-supervised learning
+- masked modeling
+- masked autoencoder
+- latent variable model
+- prototype learning
+- metric learning
+- out-of-distribution
+- online adaptation
+- test-time adaptation
+- continual learning
+- domain adaptation
+- domain generalization
+- distribution shift
+- representation drift
+- language model integration
+- retrieval-augmented generation
+- diffusion model
+- multimodal alignment
+- cross-modal representation learning
+- attention mechanism
+- foundation model
+- scientific machine learning
+- vision-language model
+- visual reasoning
+- world model
+
+负向过滤：
+- protein folding
+- recommender system
+- materials discovery
+- web scraper
+- vulnerability fixing
+- tutoring system
+- financial forecasting
+
+评分维度，每项 0-5：
+- Methodological Relevance
+- Inspiration Value
+- Transferability to My Research
+- Paper Quality
+- Novelty / Timeliness
+- Actionability
+
+综合分：
+Final Score =
+0.25 * Methodological Relevance
++ 0.25 * Inspiration Value
++ 0.20 * Transferability to My Research
++ 0.15 * Paper Quality
++ 0.10 * Novelty / Timeliness
++ 0.05 * Actionability
+
+评分输出：
+保存到：
+data/cs/processed/YYYY-MM-DD_scored.json
+
+建议结构：
+{
+  "date": "YYYY-MM-DD",
+  "status": "ok",
+  "generated_at": "...",
+  "candidate_path": "...",
+  "candidate_count": 0,
+  "deep_read_ids": [],
+  "top10_ids": [],
+  "papers": [
+    {
+      "...原始候选字段": "...",
+      "semantic_scores": {
+        "methodological_relevance": 0,
+        "inspiration_value": 0,
+        "transferability_to_my_research": 0,
+        "paper_quality": 0,
+        "novelty_timeliness": 0,
+        "actionability": 0,
+        "final_score": 0
+      },
+      "selected_for_deep_read": false,
+      "selected_for_top10": false,
+      "matched_keywords": [],
+      "reading_evidence": "abstract-only / paper page / pdf",
+      "semantic_rank": 0
+    }
+  ]
+}
+
+阅读流程：
+1. 读取 candidates.json，先基于 title、abstract、venue/categories、retrieval_reason 做逐篇语义评分，并记录命中的重点关注关键词到 `matched_keywords`。
+2. 从高分候选中选择约 15 篇进一步阅读。
+3. 对最终 Top 10 尽量打开论文页面或 PDF，阅读 abstract、introduction、method、experiments、conclusion。
+4. 如果只能基于 abstract 判断，必须在 `reading_evidence` 和日报中明确写明。
+5. 不要编造候选、网页或 PDF 中无法支持的信息。
+
+日报输出：
+写入：
+reports/cs/YYYY-MM-DD-cs.md
+
+日报建议包含：
+- 今日概览
+- Top 10 Papers
+- 对于每篇论文
+  - 匹配关键词
+  - 作者列表
+  - 证据来源
+  - 研究的问题
+  - 核心方法：先用一句话总结，然后如果能够打开论文页面或PDF，仔细讲讲方法的创新点，例如框架的流程，提出的关键技术
+  - 迁移价值
+  - 实验的设置以及相应的关键结论
+  - 实验是否支撑作者的claim
+  - 局限
+  - 阅读建议
+- 今日重点趋势
+- 潜在研究 idea
+- 值得加入 related work 的论文
+
+Obsidian 长期知识库自动维护：
+- 日报写完后，必须继续维护 Obsidian 长期论文知识库，不要在日报生成后直接结束。
+- Obsidian vault 路径固定为：
+  /Users/liaoweiduo/Library/CloudStorage/OneDrive-Personal/Researchs/obsidian sync/knowledge
+- 先读取并遵守：
+  /Users/liaoweiduo/Library/CloudStorage/OneDrive-Personal/Researchs/obsidian sync/knowledge/Knowledge Protocol.md
+- 当前 vault 中已有：
+  - Daily Papers/：每日完整日报；`reports/` 已软链接到这里。
+  - Papers/：长期精选论文数据库，每篇论文一个 Markdown note。
+  - Concepts/：长期概念页。
+  - Ideas/：研究想法页。
+  - Bases/：Obsidian Bases 数据库视图，包括 By Author.base。
+
+Obsidian 入库筛选：
+1. 从当天日报和 `data/cs/processed/YYYY-MM-DD_scored.json` 中初筛高度相关论文。
+2. 每天只选择 1-5 篇最值得长期保留的论文进入 `Papers/`。
+3. 长期数据库不再要求论文必须是 PDF-backed；所有决定长期保存的论文都可以进入 `Papers/`。
+   - `reading_evidence` 可以是 `pdf`、`paper page` 或 `abstract-only`。
+   - 有 `pdf_url` 时应尽量下载 PDF 并抽取 text；优先使用当天深读时已经抽取的 `.txt`，例如 `tmp/deep_read_cs_YYYY-MM-DD/<paper_id>.txt`。
+   - 如果 PDF 或 PDF text 不可用，仍可入库，但必须明确标注 `pdf_backed: false`、`reading_evidence` 和 `source_evidence`，不能伪装成 PDF-backed。
+4. 日报和 scored.json 可用于初筛与生成 paper note；`Papers/` note 的 metadata、核心方法、实验、局限、claim 判断必须基于当前可获得的最佳证据重新整理。
+5. 低相关论文只保留在 `Daily Papers/`；无 PDF、无可抽取 PDF text、或只能 abstract-only 判断不再是禁止入库条件，但 abstract-only note 必须更克制，避免写超出摘要支持的信息。
+
+Obsidian paper note 写入规则：
+- 路径格式：
+  /Users/liaoweiduo/Library/CloudStorage/OneDrive-Personal/Researchs/obsidian sync/knowledge/Papers/YYYY/YYYY-MM-DD-cs - short-title.md
+- 文件名中的 `short-title` 优先使用论文作为核心贡献提出的方法或着测试集的名字，使用英文小写 slug，去掉特殊符号，避免过长。
+- 每篇 paper note 必须有 YAML properties，至少包含：
+  - `type: paper`
+  - `title`
+  - `paper_id`
+  - `source`
+  - `authors`
+  - `published`
+  - `discovered`
+  - `url`
+  - `pdf_url`（如有）
+  - `pdf_backed: true/false`
+  - `pdf_text_source`（如有）
+  - `source_evidence`
+  - `daily_report: "[[YYYY-MM-DD-cs]]"`
+  - `status: durable`
+  - `final_score`
+  - `reading_evidence: pdf / paper page / abstract-only`
+  - `topics`
+  - `method_tags`
+  - `relevance`
+  - `durability`
+- 正文至少包含：
+  - 一句话总结
+  - Source Evidence / PDF Metadata（如有）
+  - 核心问题
+  - 核心方法
+  - 实验证据
+  - Claim 是否被实验支撑
+  - 和我的研究的关系
+  - 局限与风险
+  - 可迁移 idea
+  - Links
+- 正文尽量使用中文，但保留专用科研术语的英文名称。
+- 内部链接使用 Obsidian WikiLinks，例如 `[[Sparse Autoencoder]]`；外部论文链接使用普通 URL。
+- 作者列表优先保证可被 `Bases/By Author.base` 筛选；如果 PDF text 不可用或作者行解析不稳定，可用论文页面、OpenReview/arXiv 元数据与候选元数据交叉核对后的作者列表。
+
+Concepts / Ideas 自动维护：
+- 对每篇入库论文，必须更新或创建相关 `Concepts/` 页面。
+- 如果论文产生了可执行研究方向，必须更新或创建相关 `Ideas/` 页面。
+- 不要只在 paper note 里写孤立总结；要把可复用概念、方法、failure mode、评估协议沉淀到 Concepts 或 Ideas的正文中，并加上创建的相应obsidian链接。
+- Concepts 和 Ideas 使用 `type: concept` / `type: idea` properties，保证 `Bases/Concept Index.base` 和 `Bases/Idea Seeds.base` 可检索。
+
+日报反链规则：
+- 对当天 `reports/cs/YYYY-MM-DD-cs.md` 中已经创建或更新了 Obsidian paper note 的 Top 10 条目，添加一行：
+  - Obsidian 详情：[[YYYY-MM-DD-cs - short-title]]
+- `[[YYYY-MM-DD-cs - short-title]]` 必须与实际创建的 paper note 文件名 basename 完全一致，不包含 `.md`。
+- 只给实际进入 `Papers/` 的论文添加 Obsidian 详情链接；未入长期库的论文不要添加假链接。
+- 如果重复运行，不要重复插入同一条 `Obsidian 详情` 链接。
+- 日报反链更新完成后，`reports/cs/YYYY-MM-DD-cs.md` 仍然必须保持可读，原有摘要、排名和结论不得被删除。
+
+最后回复用户：
+- 今日候选数量
+- Top 10 标题
+- scored.json 路径
+- 日报路径
+- Obsidian 入库论文数量和标题
+- 新建或更新的 Obsidian paper note 路径
+- 更新的 Concepts / Ideas
+- 日报中新增的 `Obsidian 详情` 链接数量
+- 任何失败源、网络/代理问题或 abstract-only 限制
+
+禁止：
+- 禁止只调用脚本就结束。
+- 禁止直接使用关键词模板生成最终报告。
+- 禁止没阅读候选内容就总结。
+- 禁止生成大量重复套话。
+- 禁止因为论文命中领域关键词就给高分。
+- 禁止编造 PDF、论文页面、摘要或正文中没有的信息。
+- 禁止把无 PDF 或无可用 PDF text 的论文伪装成 PDF-backed。
+- 禁止只复制日报内容冒充经过更高证据等级支撑的 paper note。
+- 禁止给未创建 paper note 的日报条目添加 `Obsidian 详情` 假链接。
+- 禁止自动 git push。
